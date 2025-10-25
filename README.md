@@ -1,10 +1,13 @@
 # RPRouter v1.000
 
+## Install
+```
+sudo apt install -y liboping-dev arping git
+
+```
+
 ## Project File Download
 ```
-# 0. git이 없을 경우
-sudo apt install git
-
 # 1. 저장소 다운로드
 git clone https://github.com/MakeRouter/SRC.git
 
@@ -78,5 +81,36 @@ http://192.168.50.1/
    └── /index.html    → JS에서 위 2개 JSON 주기적 fetch ( 5 sec )
 ```
 
+---
 
+## 자동화 적용
+
+```
+# 1. 서비스 생성
+sudo nano /etc/systemd/system/http_server.service
+
+# 2. service 내용
+
+[Unit]
+Description=Raspberry Pi Router Dashboard Web Server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/home/pi/ap_server/http_server
+WorkingDirectory=/home/pi/ap_server
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
+
+# 3. 적용
+
+sudo systemctl daemon-reload
+sudo systemctl enable http_server
+sudo systemctl start http_server
+
+```
 
