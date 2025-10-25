@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>Raspberry Pi Router</title>
+<style>
+body { font-family: "Noto Sans KR", system-ui, -apple-system, Segoe UI, sans-serif; margin: 40px; background: #f9fafb; }
+.card { background:white; padding:20px; border-radius:10px;
+        box-shadow:0 2px 6px rgba(0,0,0,0.08); margin-bottom:20px; }
+h1 { color:#111827; font-weight: 800; }
+table { width:100%; border-collapse: collapse; background:white; border-radius:10px; overflow:hidden; }
+th, td { padding:10px; border-bottom:1px solid #eee; font-size: 14px; }
+th { background:#f3f4f6; text-align:left; color: #374151; }
+tr:hover { background:#f9fafb; }
+small { color:#6b7280; }
+</style>
+</head>
+<body>
+<h1>📶 Raspberry Pi Router Dashboard</h1>
+<p class="card"><small>5초마다 자동 새로고침됩니다.</small></p>
+
+<div class="card">
+  <h2>Wi-Fi Info</h2>
+  <p><b>SSID:</b> <span id="ssid"></span></p>
+  <p><b>Password:</b> <span id="password"></span></p>
+</div>
+
+<div class="card">
+  <h2>Connected Devices (Alive)</h2>
+  <table>
+    <thead><tr><th>IP</th><th>MAC</th><th>NAME</th></tr></thead>
+    <tbody id="devbody"></tbody>
+  </table>
+</div>
+
+<script>
+async function refresh() {
+  try {
+    const info = await fetch("/info.json").then(r => r.json());
+    document.getElementById("ssid").textContent = info.ssid;
+    document.getElementById("password").textContent = info.password;
+
+    const devs = await fetch("/devices.json").then(r => r.json());
+    const tbody = document.getElementById("devbody");
+    tbody.innerHTML = "";
+    devs.forEach(d => {
+      tbody.innerHTML += `<tr><td>${d.ip}</td><td>${d.mac}</td><td>${d.name}</td></tr>`;
+    });
+  } catch(e) { console.log("refresh error", e); }
+}
+refresh();
+setInterval(refresh, 5000);
+</script>
+</body>
+</html>
