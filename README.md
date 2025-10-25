@@ -3,7 +3,6 @@
 ## Install
 ```
 sudo apt install -y liboping-dev arping git
-
 ```
 
 ## Project File Download
@@ -44,7 +43,6 @@ sudo ./http_server
 
 # 3. 웹 접속
 http://192.168.50.1/
-
 ```
 
 ---
@@ -90,7 +88,6 @@ http://192.168.50.1/
 sudo nano /etc/systemd/system/http_server.service
 
 # 2. service 내용
-
 [Unit]
 Description=Raspberry Pi Router Dashboard Web Server
 After=network-online.target
@@ -107,10 +104,8 @@ RestartSec=3
 WantedBy=multi-user.target
 
 # 3. 적용
-
 sudo systemctl daemon-reload
 sudo systemctl enable http_server
 sudo systemctl start http_server
-
 ```
 
