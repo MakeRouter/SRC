@@ -52,31 +52,39 @@ http://192.168.50.1/
 | 파일 | 주요 함수 | 설명 |
 |------|------------|------|
 | `main.c` | `main()` | HTTP 서버 초기화 및 루프 실행 |
-| `http_server.c` | `serve_info_json()` | `/info.json` 요청 시 SSID, PW 반환 |
-| 〃 | `serve_devices_json()` | `/devices.json` 요청 시 현재 DHCP 클라이언트 목록 반환 |
-| `device_info.c` | `get_connected_devices()` | `/var/lib/misc/dnsmasq.leases` 파일 파싱 |
-| 〃 | `read_wifi_info()` | SSID, 비밀번호 파일(`/etc/hostapd/hostapd.conf`) 읽기 |
-| `device_info.h` | — | `struct device_info` 정의 및 함수 프로토타입 선언 |
-| `www/index.html` | — | 라우터 대시보드 UI (5초마다 자동 새로고침, JS Fetch로 `/info.json`, `/devices.json` 요청) |
+| `http_server.c` | `send_info_json()` | `/info.json` 요청 시 SSID, Password 반환 |
+| 〃 | `send_devices_json()` | `/devices.json` 요청 시 현재 DHCP 클라이언트 목록 반환 |
+| 〃 | `send_status_json()` | `/status.json` 요청 시 CPU 온도, 업타임, 인터넷 연결 상태 반환 |
+| 〃 | `handle_block_mac()` | `/block?mac=` 요청 시 해당 MAC 주소 차단 (iptables DROP) |
+| `device_info.c` | `load_connected_devices()` | `/var/lib/misc/dnsmasq.leases` 파일 파싱 및 병렬 ping 확인 |
+| 〃 | `get_ap_info()` | `/etc/hostapd/hostapd.conf` 파일에서 SSID / 비밀번호 추출 |
+| `device_info.h` | — | `DeviceInfo` 구조체 및 함수 프로토타입 정의 |
+| `www/index.html` | — | 웹 대시보드 (JS fetch로 JSON 갱신, 라이트/다크 테마, 새로고침 모달 포함) |
+
 
 ---
 
 ## HTTP Endpoints
 
 | Endpoint | Method | Description |
-|-----------|---------|--------------|
+|-----------|---------|-------------|
 | `/` | GET | 대시보드 페이지 (`index.html`) |
-| `/info.json` | GET | SSID, 비밀번호 정보 |
-| `/devices.json` | GET | 현재 연결된 장치 리스트 |
+| `/info.json` | GET | SSID / Password 정보 반환 |
+| `/devices.json` | GET | 연결된 DHCP 클라이언트 목록 |
+| `/status.json` | GET | CPU 온도, 업타임, 인터넷 연결 여부 |
+| `/block?mac=` | GET | 특정 MAC 주소 차단 (iptables DROP) |
 
 ---
 
 ## System Flow
 ```
 [브라우저] → [Raspberry Pi HTTP Server]
-   ├── /info.json     → hostapd.conf 읽음
-   ├── /devices.json  → dnsmasq.leases 파싱
-   └── /index.html    → JS에서 위 2개 JSON 주기적 fetch ( 5 sec )
+   ├── /info.json     → hostapd.conf 에서 SSID/PW 추출
+   ├── /devices.json  → dnsmasq.leases 파싱 + ping alive 확인
+   ├── /status.json   → CPU 온도, 업타임, 인터넷 연결 여부 반환
+   ├── /block?mac=xx  → iptables DROP rule 추가
+   └── /index.html    → JS로 위 API들을 10초마다 fetch
+
 ```
 
 ---
@@ -90,8 +98,8 @@ sudo nano /etc/systemd/system/http_server.service
 # 2. service 내용
 [Unit]
 Description=Raspberry Pi Router Dashboard Web Server
-After=network-online.target
-Wants=network-online.target
+After=network.target
+Wants=network.target
 
 [Service]
 Type=simple
